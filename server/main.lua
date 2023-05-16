@@ -15,7 +15,6 @@ for i = 1, #players do
     end
     print(State.alias)
 end
--- print(json.encode(AliasList, { indent = true }))
 
 
 function generateRandomString(len)
@@ -117,10 +116,14 @@ end)
 
 -- tested, working
 lib.callback.register('m1_groups:createGroup', function(src)
-    if Player(src).state.alias == nil then
+    local source = src
+    local playerState = Player(source).state
+    if playerState.alias == nil then
         return false, "No Alias"
     end
-    if Player(src).state.group ~= nil then return false, "Already in a group" end
+    if playerState.group ~= nil then
+        return false, "Already in a group"
+    end
     print('creating group')
     local source = src
     local group = Groups.initGroup(source)

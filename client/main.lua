@@ -9,7 +9,7 @@ RegisterCommand("groupCreate", function(source, args, rawCommand)
         }
     else
         notification = {
-            title = "Already in a group",
+            title = group,
             type = "error",
         }
     end
@@ -86,7 +86,7 @@ end)
 local stop = false
 CreateThread(function()
     repeat
-        Wait(1000)
+        Wait(2000)
         print("Group: ", LocalPlayer.state.group)
         print("Alias: ", LocalPlayer.state.alias)
     until stop == true
