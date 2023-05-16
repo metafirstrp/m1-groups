@@ -96,6 +96,19 @@ RegisterCommand('groupClear', function(source, args, rawCommand)
     LocalPlayer.state:set('alias', nil, true)
 end)
 
+RegisterCommand('groupPromote', function(source, args, rawCommand)
+    local playerState = LocalPlayer.state
+    if not args[1] then return end
+    local target = args[1]
+    local success, msg = lib.callback.await('m1_groups:promoteLeader', false, playerState.group, target)
+    local notification = {
+        title = msg,
+        type = "error",
+    }
+    if success then notification.type = "info" end
+    lib.notify(notification)
+end, false)
+
 local stop = false
 CreateThread(function()
     repeat

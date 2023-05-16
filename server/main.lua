@@ -11,14 +11,12 @@ for i = 1, #players do
     State.group = nil
     if Player(player.source).state.alias ~= nil then
         AliasList[State.alias] = player
-    end
+    end 
     print(State.alias)
 end
 
-
-
-function generateRandomString(len)
-    local length = len or 4
+local function generateRandomString(len)
+    local length = len or 3
     local str = ""
     local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     math.randomseed(os.time())
@@ -32,8 +30,11 @@ function generateRandomString(len)
     return str
 end
 
+-- tested, working needs testing on update function and cooldown of updating
 Groups.setAlias = function(src, _alias)
+    -- TODO: Check if player already has an alias - if so update alias across list and groups
     local source = src
+    if Player(source).state.alias ~= nil then return Player(source).state.alias end
     local alias = _alias or generateRandomString(4)
     Player(source).state:set('alias', alias, true)
     local player = Ox.GetPlayer(source)
@@ -41,6 +42,7 @@ Groups.setAlias = function(src, _alias)
     return alias
 end
 
+-- tested, working
 Groups.initGroup = function(src)
     local source = src
     local player = Ox.GetPlayer(source)
@@ -66,6 +68,7 @@ Groups.initGroup = function(src)
     return group
 end
 
+-- tested, working
 Groups.removeGroup = function(groupId)
     local group = GroupList[groupId]
     if group == nil then return end
@@ -75,6 +78,36 @@ Groups.removeGroup = function(groupId)
     GroupList[groupId] = nil
 end
 
+-- tested, working
+Groups.addMember = function(src, _member)
+    local source = src
+    local requestedMemberAlias = _member
+    local group = GroupList[Player(source).state.group]
+    if group == nil then return "No Valid Group" end
+    if group.members[Player(source).state.alias].leader == false then return "Not Group Leader" end
+    local member = AliasList[requestedMemberAlias]
+    if member == nil then return false, "No Valid Member" end
+
+    local memberState = Player(member.source).state
+    if memberState.group ~= nil then return false, "Member Already In Group" end
+    print(json.encode(member, { indent = true }))
+    group.members[requestedMemberAlias] = {
+        charid = member.charid,
+        source = member.source,
+        leader = leader
+    }
+    print('added member')
+    memberState:set('group', group.id, true)
+    local notif = {
+        title = "Group Joined",
+        description = "You have joined " .. group.id,
+        type = "success",
+    }
+    TriggerClientEvent('ox_lib:notify', member.source, notif)
+    return true
+end
+
+-- tested, working
 Groups.removeMember = function(src, groupId, memeberAlias)
     local source = src
     local playerState = Player(source).state
@@ -89,38 +122,50 @@ Groups.removeMember = function(src, groupId, memeberAlias)
     end
     Player(member.source).state:set('group', nil, true)
     group.members[memeberAlias] = nil
-
     return true, string.format("Removed %s from group.", memeberAlias)
 end
 
-Groups.addMember = function(src, _member)
-    local source = src
-    local requestedMemberAlias = _member
-    print('requestedMember', requestedMemberAlias)
-    local group = GroupList[Player(source).state.group]
-    if group == nil then return "No Valid Group" end
-    if group.members[Player(source).state.alias].leader == false then return "Not Group Leader" end
-    local member = AliasList[requestedMemberAlias]
-    if member == nil then return false, "No Valid Member" end
-
-
-    local memberState = Player(member.source).state
-    if memberState.group ~= nil then return false, "Member Already In Group" end
-    print(json.encode(member, { indent = true }))
-    group.members[requestedMemberAlias] = {
-        charid = member.charid,
-        source = member.source,
-        leader = false
-    }
-    print('added member')
-    memberState:set('group', group.id, true)
-    local notif = {
+Groups.rejoin = function(source, alias, group, groupName)
+    GroupList[groupName].members[alias].source = source
+    Player(source).state:set('group', group.id, true)
+    Player(source).state:set('alias', alias, true)
+    local notif1 = {
         title = "Group Joined",
         description = "You have joined " .. group.id,
         type = "success",
     }
-    TriggerClientEvent('ox_lib:notify', member.source, notif)
-    return true
+    local notif2 = {
+        title = "Alias Set",
+        description = string.format("Your alias has been set to %s.",alias),
+        type = "success",
+    }
+    TriggerClientEvent('ox_lib:notify', source, notif1)
+    TriggerClientEvent('ox_lib:notify', source, notif2)
+    return true, "Rejoined group automatically"
+end
+
+-- tested, working
+Groups.promoteLeader = function(src, groupId, memberAlias)
+    local group = GroupList[groupId]
+    local members = group.members
+    if memberAlias == nil then return false, "No Valid Member" end
+    if not members?[memberAlias] then return false, "Must be existing group member" end
+    local source = src
+    local memberSource = members[memberAlias].source
+    local sourceAlias = Player(source).state.alias
+    if members?[sourceAlias].leader == true then
+        members?[sourceAlias].leader = nil
+        members?[memberAlias].leader = true
+        GroupList[groupId].members = members
+        local notif = {
+            title = "Promoted",
+            description = string.format("You are now leader of group %s.", groupId),
+            type = "success",
+        }
+        TriggerClientEvent('ox_lib:notify', memberSource, notif)
+        return true, string.format("Promoted %s to leader.", memberAlias)
+    end
+    return false, "Must be group leader"
 end
 
 -- tested, working
@@ -199,6 +244,15 @@ lib.callback.register('m1_groups:getGroup', function(src)
     return true, group
 end)
 
+lib.callback.register('m1_groups:promoteLeader',function(src, groupId, memberAlias)
+    -- print(src, groupId, memberAlias)
+    local success, err = Groups.promoteLeader(src, groupId, memberAlias)
+    print(success, err)
+    return success, err
+end)
+
+
+
 AddEventHandler('ox:playerLoaded', function(src, userid, charid)
     local source = src
     local cid = charid
@@ -207,52 +261,24 @@ AddEventHandler('ox:playerLoaded', function(src, userid, charid)
         local group = _group
         for alias, data in pairs(group.members) do
             if data.charid == cid then
-                GroupList[groupName].members[alias].source = source
-                Player(source).state:set('group', group.id, true)
-                Player(source).state:set('alias', alias, true)
-                local notif1 = {
-                    title = "Group Joined",
-                    description = "You have joined " .. group.id,
-                    type = "success",
-                }
-                local notif2 = {
-                    title = "Alias Set",
-                    description = string.format("Your alias has been set to %s.",alias),
-                    type = "success",
-                }
-                TriggerClientEvent('ox_lib:notify', source, notif1)
-                TriggerClientEvent('ox_lib:notify', source, notif2)
-                return true, "Rejoined group automatically"
+                -- GroupList[groupName].members[alias].source = source
+                -- Player(source).state:set('group', group.id, true)
+                -- Player(source).state:set('alias', alias, true)
+                -- local notif1 = {
+                --     title = "Group Joined",
+                --     description = "You have joined " .. group.id,
+                --     type = "success",
+                -- }
+                -- local notif2 = {
+                --     title = "Alias Set",
+                --     description = string.format("Your alias has been set to %s.",alias),
+                --     type = "success",
+                -- }
+                -- TriggerClientEvent('ox_lib:notify', source, notif1)
+                -- TriggerClientEvent('ox_lib:notify', source, notif2)
+                -- return true, "Rejoined group automatically"
+                Groups.rejoin(source, alias, group, groupName)
             end
         end
     end
 end)
-
--- lib.callback.register('m1_groups:rejoinGroup',function(src)
---     local source = src
---     local player = Ox.GetPlayer(source)
---     for groupName, _group in pairs(list) do
---         local group = _group
---         for alias, data in pairs(group.members) do
---             if data.charid == player.charid then
---                 GroupList[groupName].members[alias].source = source
---                 Player(source).state:set('group', group.id, true)
---                 Player(source).state:set('alias', alias, true)
---                 local notif1 = {
---                     title = "Group Joined",
---                     description = "You have joined " .. group.id,
---                     type = "success",
---                 }
---                 local notif2 = {
---                     title = "Alias Set",
---                     description = string.format("Your alias has been set to %s.",alias),
---                     type = "success",
---                 }
---                 TriggerClientEvent('ox_lib:notify', source, notif1)
---                 TriggerClientEvent('ox_lib:notify', source, notif2)
---                 return true, "Rejoined group automatically"
---             end
---         end
---     end
---     return true, "Rejoined group automatically"
--- end)
