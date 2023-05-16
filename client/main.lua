@@ -17,7 +17,7 @@ RegisterCommand("groupCreate", function(source, args, rawCommand)
 end, false)
 
 RegisterCommand("groupDestroy", function(source, args, rawCommand)
-    local success, error = lib.callback.await('m1_groups:removeGroup', false)
+    local success, error = lib.callback.await('m1_groups:destroyGroup', false)
     if error then
         local notification = {
             title = error,
@@ -60,10 +60,10 @@ RegisterCommand('groupAdd', function(source, args, rawCommand)
             type = "error",
         })
     end
-    local success, error = lib.callback.await('m1_groups:addMember', false, args[1])
-    if error then
+    local success, msg = lib.callback.await('m1_groups:addMember', false, args[1])
+    if msg then
         local notification = {
-            title = error,
+            title = msg,
             type = "error",
         }
         lib.notify(notification)
@@ -76,6 +76,19 @@ RegisterCommand('groupAdd', function(source, args, rawCommand)
         }
         lib.notify(notification)
     end
+end, false)
+
+RegisterCommand('groupRemove', function(source, args, rawCommand)
+    local playerState = LocalPlayer.state
+    local alias = args[1] or playerState.alias
+    print('alias', alias, 'group', playerState.group)
+    local success, msg = lib.callback.await('m1_groups:removeMember', false, playerState.group, alias)
+    local notification = {
+        title = msg,
+        type = "error",
+    }
+    if success then notification.type = "success" end
+    lib.notify(notification)
 end, false)
 
 RegisterCommand('groupClear', function(source, args, rawCommand)
