@@ -11,7 +11,7 @@ for i = 1, #players do
     State.group = nil
     if Player(player.source).state.alias ~= nil then
         AliasList[State.alias] = player
-    end 
+    end
     print(State.alias)
 end
 
@@ -224,8 +224,8 @@ lib.callback.register('m1_groups:removeMember', function(src, groupId, memberAli
 end)
 
 -- tested, working
-lib.callback.register('m1_groups:destroyGroup', function(src)
-    print('destroying group')
+lib.callback.register('m1_groups:disbandGroup', function(src)
+    print('disbanding group')
     local source = src
     local group = GroupList[Player(source).state.group]
     if group == nil then return false, "No Valid Group" end

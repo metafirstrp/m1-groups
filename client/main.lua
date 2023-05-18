@@ -1,3 +1,5 @@
+-- Changed the word "Destroy/Destroyed" to "Disband/Disbanded"
+
 RegisterCommand("groupCreate", function(source, args, rawCommand)
     local success, group = lib.callback.await('m1_groups:createGroup', false)
     local notification
@@ -16,8 +18,8 @@ RegisterCommand("groupCreate", function(source, args, rawCommand)
     lib.notify(notification)
 end, false)
 
-RegisterCommand("groupDestroy", function(source, args, rawCommand)
-    local success, error = lib.callback.await('m1_groups:destroyGroup', false)
+RegisterCommand("groupDisband", function(source, args, rawCommand)
+    local success, error = lib.callback.await('m1_groups:disbandGroup', false)
     if error then
         local notification = {
             title = error,
@@ -28,7 +30,7 @@ RegisterCommand("groupDestroy", function(source, args, rawCommand)
 
     if success then
         local notification = {
-            title = "Group Destroyed",
+            title = "Group Disbanded",
             type = "success",
         }
         lib.notify(notification)
