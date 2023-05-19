@@ -105,7 +105,6 @@ GroupMenu.aliasInput = function()
 		end
 	end
 	repeat Wait(10) until GroupMenu.homeMenuBuilder()
-	lib.showContext('homeMenu')
 	return true
 end
 
@@ -124,24 +123,23 @@ GroupMenu.groupOption = function()
 		option.description = "You are not in a group.. yet"
 
 		option.onSelect = function()
-			local success, newGroup = lib.callback.await('m1_groups:createGroup', false)
-			print(success, json.encode(newGroup))
-			lib.hideContext()
-			if success then
-				notification = {
-					title = "Group Created",
-					description = "Group ID: " .. newGroup.id,
-					type = "success",
-				}
-
-				GroupMenu.refresh()
-			else
-				notification = {
-					title = 'Invalid Request',
-					type = "error",
-				}
-			end
-			lib.notify(notification)
+			lib.callback('m1_groups:createGroup', false, function(success, newGroup)
+				if success then
+					notification = {
+						title = "Group Created",
+						description = "Group ID: " .. newGroup.id,
+						type = "success",
+					}
+					
+					GroupMenu.refresh()
+				else
+					notification = {
+						title = 'Invalid Request',
+						type = "error",
+					}
+				end
+				lib.notify(notification)
+			end)
 		end
 		if not getAlias() then
 			option.disabled = true
@@ -158,7 +156,7 @@ GroupMenu.aliasOption = function()
 	option.icon = "id-card"
 	option.arrow = true
 	option.onSelect = function()
-		lib.hideContext()
+		-- lib.hideContext()
 		if GroupMenu.aliasInput() then
 			GroupMenu.refresh()
 		end
