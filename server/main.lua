@@ -30,11 +30,29 @@ local function generateRandomString(len)
     return str
 end
 
+Groups.updateAlias = function(src, _alias)
+    local source = src
+    local playerState = Player(source).state
+    local prevAlias = playerState.alias
+    local alias = _alias or generateRandomString(4)
+    local groupId = playerState.group
+    local group = GroupList[groupId]
+    if group == nil then return false, "No Valid Group" end
+    for k,v in pairs(group.members) do
+        print(k,json.encode(v))
+    end
+    playerState:set('alias', alias, true)
+    local player = Ox.GetPlayer(source)
+    AliasList[alias] = player
+    return alias
+end
+
 -- tested, working needs testing on update function and cooldown of updating
 Groups.setAlias = function(src, _alias)
     -- TODO: Check if player already has an alias - if so update alias across list and groups
     local source = src
-    if Player(source).state.alias ~= nil then return Player(source).state.alias end
+    local playerState = Player(source).state
+    if playerState.alias ~= nil and playerState.group ~= nil then return Groups.updateAlias(source) end
     local alias = _alias or generateRandomString(4)
     Player(source).state:set('alias', alias, true)
     local player = Ox.GetPlayer(source)
