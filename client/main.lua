@@ -110,10 +110,10 @@ RegisterCommand('groupPromote', function(source, args, rawCommand)
 end, false)
 
 local stop = false
-CreateThread(function()
-    repeat
-        Wait(2000)
-        print("Group: ", LocalPlayer.state.group)
-        print("Alias: ", LocalPlayer.state.alias)
-    until stop == true
-end)
+-- CreateThread(function()
+--     repeat
+--         Wait(2000)
+--         print("Group: ", LocalPlayer.state.group)
+--         print("Alias: ", LocalPlayer.state.alias)
+--     until stop == true
+-- end)

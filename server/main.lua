@@ -6,13 +6,13 @@ local players = Ox.GetPlayers()
 print('rebuilding player alias list')
 for i = 1, #players do
     local player = players[i]
-    local State = Player(player.source).state
+    local state = Player(player.source).state
     print(player.source)
-    State.group = nil
+    state.group = nil
     if Player(player.source).state.alias ~= nil then
-        AliasList[State.alias] = player
-    end 
-    print(State.alias)
+        AliasList[state.alias] = player
+    end
+    print(state.alias)
 end
 
 local function generateRandomString(len)
@@ -252,7 +252,6 @@ lib.callback.register('m1_groups:promoteLeader',function(src, groupId, memberAli
 end)
 
 
-
 AddEventHandler('ox:playerLoaded', function(src, userid, charid)
     local source = src
     local cid = charid
@@ -261,22 +260,6 @@ AddEventHandler('ox:playerLoaded', function(src, userid, charid)
         local group = _group
         for alias, data in pairs(group.members) do
             if data.charid == cid then
-                -- GroupList[groupName].members[alias].source = source
-                -- Player(source).state:set('group', group.id, true)
-                -- Player(source).state:set('alias', alias, true)
-                -- local notif1 = {
-                --     title = "Group Joined",
-                --     description = "You have joined " .. group.id,
-                --     type = "success",
-                -- }
-                -- local notif2 = {
-                --     title = "Alias Set",
-                --     description = string.format("Your alias has been set to %s.",alias),
-                --     type = "success",
-                -- }
-                -- TriggerClientEvent('ox_lib:notify', source, notif1)
-                -- TriggerClientEvent('ox_lib:notify', source, notif2)
-                -- return true, "Rejoined group automatically"
                 Groups.rejoin(source, alias, group, groupName)
             end
         end
