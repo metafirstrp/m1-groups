@@ -1,46 +1,5 @@
 -- Menu Header and Submenu Buttons
 local GroupMenu = {}
--- lib.registerContext({
---   id = 'groups',
---   title = 'Group Menu',
---   options = {
---     {
---       --needs to be able to use the create group callback
---       title = 'Create Group',
---       description = 'Create a new group',
---       menu = ' create_groups',
---       icon = 'fa-solid fa-people-group',
---     },
---     {
---       --needs to be able to use the add member callback and add the input menu
---       title = 'Add Member',
---       description = 'Add a member to a group',
---       menu = ' add_member',
---       icon = 'fa-solid fa-user-plus',
---     },
---     {
---       --needs to be able to use the set alias callback and add the input menu
---       title = 'Set Alias',
---       description = 'Set your Alias/Nickname',
---       menu = ' set_alias',
---       icon = 'fa-solid fa-pen-field',
---       input = true,
---     },
---     {
---       --needs to be able to use the disband group callback
---       title = 'Disband Group',
---       description = 'Disband a group',
---       menu = ' disband_group',
---       icon = 'fa-trash',
---     },
---   }
--- })
-
--- home menu
-
--- setAlias / update alias
--- create group / manage group
--- invite member
 
 local function getGroupInfo()
 	local groupId = LocalPlayer.state?.group or false
@@ -136,7 +95,7 @@ local function memberOptionsBuilder(membId, memb)
 		id = memberId,
 	}
 	option.onSelect = function(args)
-		print(string.format('member %s selected', memberId))
+		-- print(string.format('member %s selected', memberId))
 		repeat Wait(100) until GroupMenu.memberManageMenuBuilder(memberId, memberData)
 		lib.showContext(GroupMenu.memberManage?.id)
 	end
@@ -145,8 +104,7 @@ end
 
 GroupMenu.memberMenuBuilder = function()
 	local success, group = getGroupInfo()
-	if not success then print('no group to print') return false end
-	-- print(json.encode(group, {indent = true}))
+	if not success then return false end
 	-- we know group exists, now we need to build the menu
 	local members = group.members
 	GroupMenu.memberContext = {}
@@ -157,7 +115,7 @@ GroupMenu.memberMenuBuilder = function()
 	options = {}
 	local index = 1
 	for memberId,member in pairs(members)do
-		print(memberId, json.encode(member))
+		-- print(memberId, json.encode(member))
 		options[index] = memberOptionsBuilder(memberId, member)
 		index += 1
 	end
@@ -210,7 +168,7 @@ GroupMenu.aliasInput = function()
 	-- print('requestedAlias', requestedAlias)
 	if requestedAlias then
 		local success, newAlias = lib.callback.await('m1_groups:setAlias', false, requestedAlias)
-		print('ln144',success, newAlias)
+		-- print('ln144',success, newAlias)
 		if success then
 			local notif = {
 				title = "Alias Set",
@@ -239,9 +197,9 @@ GroupMenu.groupOption = function()
 	option.arrow = true
 	option.description = string.format("Current group: %s", group.id)
 	option.menu = 'memberMenu'
-	print('ln173',groupRes)
+	-- print('ln173',groupRes)
 	if not groupRes then
-		print('not group')
+		-- print('not group')
 		option.title = "Create Group"
 		option.description = "You are not in a group.. yet"
 		option.icon = "square-plus"

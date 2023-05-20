@@ -7,12 +7,10 @@ print('rebuilding player alias list')
 for i = 1, #players do
     local player = players[i]
     local state = Player(player.source).state
-    print(player.source)
     state.group = nil
     if Player(player.source).state.alias ~= nil then
         AliasList[state.alias] = player
     end
-    print(state.alias)
 end
 
 local function generateRandomString(len)
@@ -32,7 +30,6 @@ end
 
 Groups.updateAlias = function(src, _alias)
     local source = src
-    print('updateAlias',source)
     local playerState = Player(source)?.state
     local prevAlias = playerState.alias
     local alias = _alias or generateRandomString(4)
@@ -40,7 +37,6 @@ Groups.updateAlias = function(src, _alias)
     local group = GroupList[groupId]
     if group == nil then return false, "No Valid Group" end
     for k,v in pairs(group.members) do
-        -- print('updateAlias()',k,json.encode(v))
         group.members[alias] = v
         group.members[k] = nil
     end
@@ -55,7 +51,6 @@ Groups.setAlias = function(src, _alias)
     -- TODO: Check if player already has an alias - if so update alias across list and groups
     local source = src
     local playerState = Player(source).state
-    print('ln56',playerState.alias, playerState.group)
     if playerState.alias ~= nil and playerState.group ~= nil then return Groups.updateAlias(source, _alias) end
     local alias = _alias or generateRandomString(4)
     Player(source).state:set('alias', alias, true)
@@ -113,13 +108,11 @@ Groups.addMember = function(src, _member)
 
     local memberState = Player(member.source).state
     if memberState.group ~= nil then return false, "Member Already In Group" end
-    print(json.encode(member, { indent = true }))
     group.members[requestedMemberAlias] = {
         charid = member.charid,
         source = member.source,
         leader = leader
     }
-    print('added member')
     memberState:set('group', group.id, true)
     local notif = {
         title = "Group Joined",
@@ -193,9 +186,7 @@ end
 
 -- tested, working
 lib.callback.register('m1_groups:setAlias', function(src, _alias)
-    print('_alias:',_alias, src) 
     local source = src
-    -- print('callback source:', src)
     local requestedAlias = _alias
     local alias = Groups.setAlias(source, requestedAlias)
     return true, alias
@@ -211,10 +202,8 @@ lib.callback.register('m1_groups:createGroup', function(src)
     if playerState.group ~= nil then
         return false, "Already in a group"
     end
-    print('creating group')
     local source = src
     local group = Groups.initGroup(source)
-    print(json.encode(group))
     local groupId = group.id
     GroupList[groupId] = group
     return true, group
@@ -222,10 +211,8 @@ end)
 
 -- tested, working - needs feature invites
 lib.callback.register('m1_groups:addMember', function(src, _member)
-    print('adding member', _member)
     local source = src
     local member = _member
-    -- print(json.encode(AliasList, { indent = true }))
     local memberAlias = AliasList[member] or nil
     if memberAlias == nil then return false, "No Valid Member" end
 
@@ -237,11 +224,10 @@ lib.callback.register('m1_groups:addMember', function(src, _member)
 end)
 
 lib.callback.register('m1_groups:removeMember', function(src, memberAlias)
-    -- print('cb',src, groupId, memberAlias)
+
     local groupId = Player(src).state.group
     local source = src
     local group = GroupList[groupId]
-    -- print(json.encode(group))
     if group == nil then return false, "No Valid Group" end
     if memberAlias == nil then return false, "No Valid Member" end
     local success, err = Groups.removeMember(source, groupId, memberAlias)
@@ -270,10 +256,8 @@ lib.callback.register('m1_groups:getGroup', function(src)
 end)
 
 lib.callback.register('m1_groups:promoteLeader',function(src, memberAlias)
-    -- print(src, groupId, memberAlias)
     local groupId = Player(src).state.group
     local success, err = Groups.promoteLeader(src, groupId, memberAlias)
-    print(success, err)
     return success, err
 end)
 
