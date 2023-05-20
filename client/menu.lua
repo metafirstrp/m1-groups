@@ -1,5 +1,5 @@
 -- Menu Header and Submenu Buttons
-GroupMenu = {}
+local GroupMenu = {}
 -- lib.registerContext({
 --   id = 'groups',
 --   title = 'Group Menu',
@@ -44,8 +44,10 @@ GroupMenu = {}
 
 local function getGroupInfo()
 	local groupId = LocalPlayer.state?.group or false
-	local group = lib.callback.await('m1_groups:getGroup', groupId)
-	return group
+	local isLeader = false
+	local success, group = lib.callback.await('m1_groups:getGroup', groupId)
+	if group.leader == LocalPlayer.state?.alias then isLeader = true end
+	return success, group, isLeader
 end
 
 local function getAlias()
@@ -57,15 +59,101 @@ local function detectProfanity()
 	-- spongebob
 end
 
+GroupMenu.inviteInput = function()
+	local input = lib.inputDialog('Invite Member', {
+  		{type = 'input', label = 'Username', description = 'This is visible to other players', required = true, min = 4, max = 16}
+	})
+	if not input then 
+		lib.showContext(GroupMenu.homeContext?.id)
+	return false, 'does not exist' end
+	local invitee = input[1]
+	lib.callback('m1_groups:addMember', invitee)
+	GroupMenu.memberMenuBuilder()
+	lib.showContext(GroupMenu.memberContext?.id)
+	return true, string.format('Invited %s', invitee)
+end
+
+GroupMenu.inviteOption = function()
+	local option = {}
+	option.title = 'Invite Member'
+	option.description = 'Invite a member to your group'
+	option.icon = 'user-plus'
+	option.onSelect = function(args)
+		print('invite member selected')
+		GroupMenu.inviteInput()
+	end
+	return option
+end
+
+GroupMenu.memberManageMenuBuilder = function(membId, membData)
+	local memberData, memberId = memb, membId
+	local memberMenu = {}
+	memberMenu.title = string.format('Manage %s', memberId)
+	memberMenu.id = 'memberMenu'
+end
+
+local function memberOptionsBuilder(membId, memb)
+	local memberData, memberId = memb, membId
+	local option = {}
+	option.title = string.format('Manage %s', memberId)
+	option.description = 'Manage this member'
+	option.icon = 'user'
+	if memberData.leader then
+		option.icon = 'crown'
+		option.disabled = true
+		option.description = 'Cannot manage yourself'
+	end
+	if memberData.source ~= nil then
+		option.iconColor = 'green'
+	end
+	option.args = {
+		id = memberId,
+	}
+	option.onselect = function(args)
+		print(string.format('member %s selected', memberId))
+	end
+	return option
+end
+
+GroupMenu.memberMenuBuilder = function()
+	local success, group = getGroupInfo()
+	if not success then print('no group to print') return false end
+	-- print(json.encode(group, {indent = true}))
+	-- we know group exists, now we need to build the menu
+	local members = group.members
+	GroupMenu.memberContext = {}
+	GroupMenu.memberContext.title = string.format('Manage %s', group.id)
+	GroupMenu.memberContext.id = 'memberMenu'
+	GroupMenu.memberContext.options = {}
+	GroupMenu.memberContext.menu = 'homeMenu'
+	options = {}
+	local index = 1
+	for memberId,member in pairs(members)do
+		print(memberId, json.encode(member))
+		options[index] = memberOptionsBuilder(memberId, member)
+		index += 1
+	end
+	GroupMenu.memberContext.options = options
+	lib.registerContext(GroupMenu?.memberContext)
+	return true
+end
+
+
 GroupMenu.homeMenuBuilder = function()
+	local success, group, isLeader = getGroupInfo()
 	GroupMenu.homeContext = {}
 	GroupMenu.homeContext.title = Config.menuTitle
 	GroupMenu.homeContext.id = 'homeMenu'
 	GroupMenu.homeContext.options = {}
 	local index = 1
 	GroupMenu.homeContext.options[index] = GroupMenu.aliasOption()
-	index = index + 1
+	index += 1
 	GroupMenu.homeContext.options[index] = GroupMenu.groupOption()
+	print('isLeader',isLeader)
+	if isLeader then
+		index += 1
+		GroupMenu.homeContext.options[index] = GroupMenu.inviteOption()
+	end
 	return true
 end
 
@@ -85,9 +173,10 @@ GroupMenu.aliasInput = function()
   		{type = 'input', label = 'Username', description = 'This is visible to other players', required = true, min = 4, max = 16}
 	})
 	local requestedAlias = input?[1]
+	-- print('requestedAlias', requestedAlias)
 	if requestedAlias then
 		local success, newAlias = lib.callback.await('m1_groups:setAlias', false, requestedAlias)
-		print(success, newAlias)
+		print('ln144',success, newAlias)
 		if success then
 			local notif = {
 				title = "Alias Set",
@@ -109,19 +198,19 @@ GroupMenu.aliasInput = function()
 end
 
 GroupMenu.groupOption = function()
-	local group = getGroupInfo()
+	local groupRes, group = getGroupInfo()
 	local option = {}
 	option.title = "Manage Group"
-	option.icion = "people-group"
+	option.icon = "people-group"
 	option.arrow = true
-	-- option.description = string.format("Current group: %s", group.name)	
-	-- option.menu = 'groupManagerMenu'
-	print(group)
-	if not group then
+	option.description = string.format("Current group: %s", group.id)
+	option.menu = 'memberMenu'
+	print('ln173',groupRes)
+	if not groupRes then
 		print('not group')
 		option.title = "Create Group"
 		option.description = "You are not in a group.. yet"
-
+		option.icon = "square-plus"
 		option.onSelect = function()
 			lib.callback('m1_groups:createGroup', false, function(success, newGroup)
 				if success then
@@ -145,6 +234,8 @@ GroupMenu.groupOption = function()
 			option.disabled = true
 		end
 		option.menu = nil
+	else
+		GroupMenu.memberMenuBuilder()
 	end
 	return option
 end
@@ -173,4 +264,8 @@ end
 RegisterCommand('gm', function()
 	GroupMenu.homeMenuBuilder()
   	GroupMenu.refresh()
+end)
+
+RegisterCommand('gmgroups', function()
+	GroupMenu.memberMenuBuilder()
 end)

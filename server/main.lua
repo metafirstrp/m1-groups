@@ -32,19 +32,22 @@ end
 
 Groups.updateAlias = function(src, _alias)
     local source = src
-    local playerState = Player(source).state
+    print('updateAlias',source)
+    local playerState = Player(source)?.state
     local prevAlias = playerState.alias
     local alias = _alias or generateRandomString(4)
     local groupId = playerState.group
     local group = GroupList[groupId]
     if group == nil then return false, "No Valid Group" end
     for k,v in pairs(group.members) do
-        print(k,json.encode(v))
+        -- print('updateAlias()',k,json.encode(v))
+        group.members[alias] = v
+        group.members[k] = nil
     end
     playerState:set('alias', alias, true)
     local player = Ox.GetPlayer(source)
     AliasList[alias] = player
-    return alias
+    return true, alias
 end
 
 -- tested, working needs testing on update function and cooldown of updating
@@ -52,12 +55,13 @@ Groups.setAlias = function(src, _alias)
     -- TODO: Check if player already has an alias - if so update alias across list and groups
     local source = src
     local playerState = Player(source).state
-    if playerState.alias ~= nil and playerState.group ~= nil then return Groups.updateAlias(source) end
+    print('ln56',playerState.alias, playerState.group)
+    if playerState.alias ~= nil and playerState.group ~= nil then return Groups.updateAlias(source, _alias) end
     local alias = _alias or generateRandomString(4)
     Player(source).state:set('alias', alias, true)
     local player = Ox.GetPlayer(source)
     AliasList[alias] = player
-    return alias
+    return true, alias
 end
 
 -- tested, working
@@ -71,6 +75,7 @@ Groups.initGroup = function(src)
     end
     local alias = Player(source).state.alias
     group.id = generateRandomString(6)
+    group.leader = alias
     group.members = {}
     group.members[alias] = {
         charid = identifier,
@@ -188,8 +193,9 @@ end
 
 -- tested, working
 lib.callback.register('m1_groups:setAlias', function(src, _alias)
-    print(_alias)
+    print('_alias:',_alias, src) 
     local source = src
+    -- print('callback source:', src)
     local requestedAlias = _alias
     local alias = Groups.setAlias(source, requestedAlias)
     return true, alias
