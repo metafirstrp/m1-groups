@@ -184,6 +184,22 @@ Groups.promoteLeader = function(src, groupId, memberAlias)
     return false, "Must be group leader"
 end
 
+Groups.triggerEvent = function(groupId, eventName, args)
+    local group = GroupList[groupId]
+    if args ~= nil then args = table.unpack(args) end
+    if group == nil then return false, "No Valid Group" end
+    for k, v in pairs(group.members) do
+        TriggerClientEvent(eventName, v.source, args)
+    end
+    return true
+end
+
+exports('triggerGruopEvent', Groups.triggerEvent)
+
+Groups.triggerCallback = function()
+
+end
+
 -- tested, working
 lib.callback.register('m1_groups:setAlias', function(src, _alias)
     local source = src
@@ -224,7 +240,6 @@ lib.callback.register('m1_groups:addMember', function(src, _member)
 end)
 
 lib.callback.register('m1_groups:removeMember', function(src, memberAlias)
-
     local groupId = Player(src).state.group
     local source = src
     local group = GroupList[groupId]
@@ -260,6 +275,8 @@ lib.callback.register('m1_groups:promoteLeader',function(src, memberAlias)
     local success, err = Groups.promoteLeader(src, groupId, memberAlias)
     return success, err
 end)
+
+
 
 
 AddEventHandler('ox:playerLoaded', function(src, userid, charid)

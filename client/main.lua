@@ -1,5 +1,5 @@
 -- Changed the word "Destroy/Destroyed" to "Disband/Disbanded"
-
+ 
 RegisterCommand("groupCreate", function(source, args, rawCommand)
     local success, group = lib.callback.await('m1_groups:createGroup', false)
     local notification
@@ -110,12 +110,3 @@ RegisterCommand('groupPromote', function(source, args, rawCommand)
     if success then notification.type = "info" end
     lib.notify(notification)
 end, false)
-
-local stop = false
--- CreateThread(function()
---     repeat
---         Wait(2000)
---         print("Group: ", LocalPlayer.state.group)
---         print("Alias: ", LocalPlayer.state.alias)
---     until stop == true
--- end)

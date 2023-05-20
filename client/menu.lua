@@ -14,10 +14,6 @@ local function getAlias()
 	return alias
 end
 
-local function detectProfanity()
-	-- spongebob
-end
-
 GroupMenu.inviteInput = function()
 	local input = lib.inputDialog('Invite Member', {
   		{type = 'input', label = 'Username', description = 'This is visible to other players', required = true, min = 4, max = 16}
@@ -189,6 +185,27 @@ GroupMenu.aliasInput = function()
 	return true
 end
 
+GroupMenu.aliasOption = function()
+	local alias = getAlias()
+	local option = {}
+	option.title = "Set Username"
+	option.icon = "id-card"
+	option.arrow = true
+	option.onSelect = function()
+		-- lib.hideContext()
+		if GroupMenu.aliasInput() then
+			GroupMenu.refresh()
+		end
+	end
+	if not alias then
+		option.description = "Select a username to share with others"
+	else
+		option.description = string.format("Current: %s", alias)
+	end
+	-- print(json.encode(option, { indent = true }))
+	return option
+end
+
 GroupMenu.groupOption = function()
 	local groupRes, group = getGroupInfo()
 	local option = {}
@@ -232,26 +249,6 @@ GroupMenu.groupOption = function()
 	return option
 end
 
-GroupMenu.aliasOption = function()
-	local alias = getAlias()
-	local option = {}
-	option.title = "Set Username"
-	option.icon = "id-card"
-	option.arrow = true
-	option.onSelect = function()
-		-- lib.hideContext()
-		if GroupMenu.aliasInput() then
-			GroupMenu.refresh()
-		end
-	end
-	if not alias then
-		option.description = "Select a username to share with others"
-	else
-		option.description = string.format("Current: %s", alias)
-	end
-	-- print(json.encode(option, { indent = true }))
-	return option
-end
 
 RegisterCommand('gm', function()
 	GroupMenu.homeMenuBuilder()
