@@ -73,13 +73,15 @@ GroupMenu.inviteInput = function()
 	return true, string.format('Invited %s', invitee)
 end
 
-GroupMenu.inviteOption = function()
+GroupMenu.inviteOption = function(isLeader)
 	local option = {}
 	option.title = 'Invite Member'
 	option.description = 'Invite a member to your group'
 	option.icon = 'user-plus'
+	if not isLeader then
+		option.disabled = true
+	end
 	option.onSelect = function(args)
-		print('invite member selected')
 		GroupMenu.inviteInput()
 	end
 	return option
@@ -87,9 +89,33 @@ end
 
 GroupMenu.memberManageMenuBuilder = function(membId, membData)
 	local memberData, memberId = memb, membId
-	local memberMenu = {}
-	memberMenu.title = string.format('Manage %s', memberId)
-	memberMenu.id = 'memberMenu'
+	GroupMenu.memberManage = {}
+	GroupMenu.memberManage.title = string.format('Manage %s', memberId)
+	GroupMenu.memberManage.id = 'memberManageMenu'
+	GroupMenu.memberManage.menu = 'memberMenu'
+	local options = {
+		{
+			title = 'Promote',
+			icon = 'crown',
+			onSelect = function()
+				local success, err = lib.callback.await('m1_groups:promoteLeader', false, memberId)
+				GroupMenu.memberMenuBuilder()
+				lib.showContext(GroupMenu.memberContext?.id)
+			end
+		},
+		{
+			title = 'Kick',
+			icon = 'user-slash',
+			onSelect = function()
+				local success, err = lib.callback.await('m1_groups:removeMember', false, memberId)
+				GroupMenu.memberMenuBuilder()
+				lib.showContext(GroupMenu.memberContext?.id)
+			end
+		}
+	}
+	GroupMenu.memberManage.options = options
+	lib.registerContext(GroupMenu.memberManage)
+	return true
 end
 
 local function memberOptionsBuilder(membId, memb)
@@ -100,7 +126,7 @@ local function memberOptionsBuilder(membId, memb)
 	option.icon = 'user'
 	if memberData.leader then
 		option.icon = 'crown'
-		option.disabled = true
+		-- option.disabled = true
 		option.description = 'Cannot manage yourself'
 	end
 	if memberData.source ~= nil then
@@ -109,8 +135,10 @@ local function memberOptionsBuilder(membId, memb)
 	option.args = {
 		id = memberId,
 	}
-	option.onselect = function(args)
+	option.onSelect = function(args)
 		print(string.format('member %s selected', memberId))
+		repeat Wait(100) until GroupMenu.memberManageMenuBuilder(memberId, memberData)
+		lib.showContext(GroupMenu.memberManage?.id)
 	end
 	return option
 end
@@ -133,6 +161,14 @@ GroupMenu.memberMenuBuilder = function()
 		options[index] = memberOptionsBuilder(memberId, member)
 		index += 1
 	end
+	options[index] = {
+		title = 'Disband Group',
+		icon = 'trash',
+		onSelect = function()
+			local res, err = lib.callback.await('m1_groups:disbandGroup', false)
+			repeat Wait(10) until GroupMenu.homeMenuBuilder()
+			lib.showContext(GroupMenu.homeContext?.id)
+		end}
 	GroupMenu.memberContext.options = options
 	lib.registerContext(GroupMenu?.memberContext)
 	return true
@@ -149,11 +185,9 @@ GroupMenu.homeMenuBuilder = function()
 	GroupMenu.homeContext.options[index] = GroupMenu.aliasOption()
 	index += 1
 	GroupMenu.homeContext.options[index] = GroupMenu.groupOption()
-	print('isLeader',isLeader)
-	if isLeader then
-		index += 1
-		GroupMenu.homeContext.options[index] = GroupMenu.inviteOption()
-	end
+	index += 1
+	GroupMenu.homeContext.options[index] = GroupMenu.inviteOption(isLeader)
+	lib.registerContext(GroupMenu.homeContext)
 	return true
 end
 

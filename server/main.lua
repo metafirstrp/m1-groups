@@ -236,8 +236,9 @@ lib.callback.register('m1_groups:addMember', function(src, _member)
     return success, err
 end)
 
-lib.callback.register('m1_groups:removeMember', function(src, groupId, memberAlias)
+lib.callback.register('m1_groups:removeMember', function(src, memberAlias)
     -- print('cb',src, groupId, memberAlias)
+    local groupId = Player(src).state.group
     local source = src
     local group = GroupList[groupId]
     -- print(json.encode(group))
@@ -249,9 +250,9 @@ end)
 
 -- tested, working
 lib.callback.register('m1_groups:disbandGroup', function(src)
-    print('disbanding group')
     local source = src
     local group = GroupList[Player(source).state.group]
+    if Player(source).state.alias ~= group.leader then return false, "Not Group Leader" end
     if group == nil then return false, "No Valid Group" end
     for k, v in pairs(group.members) do
         Player(v.source).state:set('group', nil, true)
@@ -268,8 +269,9 @@ lib.callback.register('m1_groups:getGroup', function(src)
     return true, group
 end)
 
-lib.callback.register('m1_groups:promoteLeader',function(src, groupId, memberAlias)
+lib.callback.register('m1_groups:promoteLeader',function(src, memberAlias)
     -- print(src, groupId, memberAlias)
+    local groupId = Player(src).state.group
     local success, err = Groups.promoteLeader(src, groupId, memberAlias)
     print(success, err)
     return success, err
