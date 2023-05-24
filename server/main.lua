@@ -184,17 +184,28 @@ Groups.promoteLeader = function(src, groupId, memberAlias)
     return false, "Must be group leader"
 end
 
+Groups.getGroupInfo = function(groupId)
+    return GroupList[groupId]
+end
+
+exports('getGroupInfo', Groups.getGroupInfo)
+
 Groups.triggerEvent = function(groupId, eventName, args)
+    print('triggering event')
+    -- print()
+    -- print(groupId, eventName, json.encode(args))
     local group = GroupList[groupId]
-    if args ~= nil then args = table.unpack(args) end
+    -- if args ~= nil and args ~= type("table") then args = table.unpack(args) end
+    -- print(json.encode(args))
     if group == nil then return false, "No Valid Group" end
     for k, v in pairs(group.members) do
+        
         TriggerClientEvent(eventName, v.source, args)
     end
     return true
 end
 
-exports('triggerGruopEvent', Groups.triggerEvent)
+exports('groupEvent', Groups.triggerEvent)
 
 Groups.triggerCallback = function()
 
