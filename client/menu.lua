@@ -22,7 +22,8 @@ GroupMenu.inviteInput = function()
 		lib.showContext(GroupMenu.homeContext?.id)
 	return false, 'does not exist' end
 	local invitee = input[1]
-	lib.callback('m1_groups:addMember', invitee)
+	print(invitee)
+	local success, err = lib.callback.await('m1_groups:addMember',false, invitee)
 	GroupMenu.memberMenuBuilder()
 	lib.showContext(GroupMenu.memberContext?.id)
 	return true, string.format('Invited %s', invitee)
@@ -84,7 +85,8 @@ local function memberOptionsBuilder(membId, memb)
 		-- option.disabled = true
 		option.description = 'Cannot manage yourself'
 	end
-	if memberData.source ~= nil then
+	local player = GetPlayerFromServerId(memberData.source)
+	if NetworkIsPlayerActive(player) then
 		option.iconColor = 'green'
 	end
 	option.args = {

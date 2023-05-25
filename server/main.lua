@@ -97,18 +97,18 @@ Groups.removeGroup = function(groupId)
 end
 
 -- tested, working
-Groups.addMember = function(src, _member)
+Groups.addMember = function(src, _memberAlias)
     local source = src
-    local requestedMemberAlias = _member
+    local memberAlias = _memberAlias
     local group = GroupList[Player(source).state.group]
     if group == nil then return "No Valid Group" end
     if group.members[Player(source).state.alias].leader == false then return "Not Group Leader" end
-    local member = AliasList[requestedMemberAlias]
+    local member = AliasList[memberAlias]
     if member == nil then return false, "No Valid Member" end
 
     local memberState = Player(member.source).state
     if memberState.group ~= nil then return false, "Member Already In Group" end
-    group.members[requestedMemberAlias] = {
+    group.members[memberAlias] = {
         charid = member.charid,
         source = member.source,
         leader = leader
@@ -238,13 +238,18 @@ end)
 
 -- tested, working - needs feature invites
 lib.callback.register('m1_groups:addMember', function(src, _member)
+    print('adding member', src, _member)
     local source = src
     local member = _member
     local memberAlias = AliasList[member] or nil
-    if memberAlias == nil then return false, "No Valid Member" end
+    if memberAlias == nil then 
+        print("No Valid Member", member)
+        return false, "No Valid Member" end
 
     local group = GroupList[Player(source).state.group]
-    if group == nil then return "No Valid Group" end
+    if group == nil then
+        print("No Valid Group")
+        return "No Valid Group" end
     if group.members[Player(source).state.alias].leader == false then return false, "Not Group Leader" end
     local success, err = Groups.addMember(source, member)
     return success, err
